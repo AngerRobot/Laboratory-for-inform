@@ -1,0 +1,116 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <iomanip>
+
+class CustomExpression {
+protected:
+    std::vector<double> operands;
+
+public:
+    CustomExpression(const std::vector<double>& ops) : operands(ops) {}
+
+    virtual double evaluate() const = 0;
+
+    void shuffle() {
+        if (operands.size() > 1) {
+            std::swap(operands.front(), operands.back());
+        }
+    }
+
+    void shuffle(size_t i, size_t j) {
+        if (i < operands.size() && j < operands.size()) {
+            std::swap(operands[i], operands[j]);
+        }
+    }
+
+    void print() const {
+        std::cout << "[" << operands.size() << "]\n";
+        printExpression();
+        std::cout << std::fixed << std::setprecision(1) << evaluate() << std::endl;
+    }
+
+protected:
+    virtual void printExpression() const = 0;
+};
+
+class CustomExpressionEvaluator : public CustomExpression {
+public:
+    CustomExpressionEvaluator(double x1, double x2, double x3)
+        : CustomExpression({x1, x2, x3}) {}
+
+    double evaluate() const override {
+        return operands[0] * operands[1] + operands[2];
+    }
+
+protected:
+    void printExpression() const override {
+        std::cout << operands[0] << " * " << operands[1] << " + (" << operands[2] << ")" << std::endl;
+    }
+};
+
+class Summator : public CustomExpression {
+public:
+    Summator(const std::vector<double>& ops) : CustomExpression(ops) {}
+
+    double evaluate() const override {
+        double sum = 0;
+        for (double op : operands) {
+            sum += op;
+        }
+        return sum;
+    }
+
+protected:
+    void printExpression() const override {
+        for (size_t i = 0; i < operands.size(); ++i) {
+            std::cout << operands[i];
+            if (i < operands.size() - 1) {
+                std::cout << " + ";
+            }
+        }
+        std::cout << std::endl;
+    }
+};
+
+class Multiplier : public CustomExpression {
+public:
+    Multiplier(double x1, double x2, double x3)
+        : CustomExpression({x1, x2, x3}) {}
+
+    double evaluate() const override {
+        return operands[0] * operands[1] * operands[2];
+    }
+
+protected:
+    void printExpression() const override {
+        std::cout << operands[0] << " * " << operands[1] << " * " << operands[2] << std::endl;
+    }
+};
+
+int main() {
+    CustomExpressionEvaluator evaluator(5, 4, -2);
+    Summator summator({5, -2.5, 3.5, 8, 1.5, -9.5, 3, -4, 6.5, -2.5});
+    Multiplier multiplier(0.25, 8, 3.5);
+
+    std::cout << "CustomExpressionEvaluator:" << std::endl;
+    evaluator.print();
+
+    std::cout << "Summator:" << std::endl;
+    summator.print();
+
+    std::cout << "Multiplier:" << std::endl;
+    multiplier.print();
+
+    std::cout << "\nAfter shuffling:" << std::endl;
+    evaluator.shuffle();
+    evaluator.print();
+
+    summator.shuffle(0, 9);
+    summator.print();
+
+    multiplier.shuffle(0, 2); 
+    multiplier.print();
+
+    return 0;
+}
