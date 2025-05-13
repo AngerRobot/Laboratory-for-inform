@@ -1,0 +1,184 @@
+#include <iostream>
+#include <fstream>
+#include <iterator>
+#include <vector>
+#include <algorithm>
+#include <cctype>
+
+template <typename T>
+class DataManager {
+private:
+    static const size_t MAX_SIZE = 64;
+    T data[MAX_SIZE];
+    size_t count;
+    std::vector<T> dumpedData;
+
+    void dumpToFile() {
+        std::ofstream outFile("dump.dat", std::ios::binary);
+        if (outFile.is_open()) {
+            for (size_t i = 0; i < count; ++i) {
+                outFile.write(reinterpret_cast<const char*>(&data[i]), sizeof(T));
+            }
+            outFile.close();
+        }
+        count = 0; // Очищаем массив после выгрузки
+    }
+
+    void loadFromFile() {
+        std::ifstream inFile("dump.dat", std::ios::binary);
+        if (inFile.is_open()) {
+            T elem;
+            while (inFile.read(reinterpret_cast<char*>(&elem), sizeof(T))) {
+                dumpedData.push_back(elem);
+            }
+            inFile.close();
+        }
+    }
+
+public:
+    DataManager() : count(0) {
+        loadFromFile();
+    }
+
+    void push(T elem) {
+        if (count >= MAX_SIZE) {
+            dumpToFile();
+        }
+        if (count < MAX_SIZE) {
+            data[count++] = elem;
+        }
+    }
+
+    void push(T elems[], size_t n) {
+        for (size_t i = 0; i < n; ++i) {
+            push(elems[i]);
+        }
+    }
+
+    T peek() const {
+        if (count > 0) {
+            return data[count - 1];
+        }
+        throw std::out_of_range("No elements to peek");
+    }
+
+    T pop() {
+        if (count > 0) {
+            return data[--count];
+        } else if (!dumpedData.empty()) {
+            T elem = dumpedData.back();
+            dumpedData.pop_back();
+            return elem;
+        }
+        throw std::out_of_range("No elements to pop");
+    }
+};
+
+// Явная специализация для символьного типа
+template <>
+class DataManager<char> {
+private:
+    static const size_t MAX_SIZE = 64;
+    char data[MAX_SIZE];
+    size_t count;
+    std::vector<char> dumpedData;
+
+    void dumpToFile() {
+        std::ofstream outFile("dump.dat", std::ios::binary);
+        if (outFile.is_open()) {
+            for (size_t i = 0; i < count; ++i) {
+                outFile.write(reinterpret_cast<const char*>(&data[i]), sizeof(char));
+            }
+            outFile.close();
+        }
+        count = 0; // Очищаем массив после выгрузки
+    }
+
+    void loadFromFile() {
+        std::ifstream inFile("dump.dat", std::ios::binary);
+        if (inFile.is_open()) {
+            char elem;
+            while (inFile.read(reinterpret_cast<char*>(&elem), sizeof(char))) {
+                dumpedData.push_back(elem);
+            }
+            inFile.close();
+        }
+    }
+
+public:
+    DataManager() : count(0) {
+        loadFromFile();
+    }
+
+    void push(char elem) {
+        if (count >= MAX_SIZE) {
+            dumpToFile();
+        }
+        if (count < MAX_SIZE) {
+            data[count++] = (std::ispunct(elem)) ? '_' : elem;
+        }
+    }
+
+    void push(char elems[], size_t n) {
+        for (size_t i = 0; i < n; ++i) {
+            push(elems[i]);
+        }
+    }
+
+    char peek() const {
+        if (count > 0) {
+            return data[count - 1];
+        }
+        throw std::out_of_range("No elements to peek");
+    }
+
+    char pop() {
+        if (count > 0) {
+            return data[--count];
+        } else if (!dumpedData.empty()) {
+            char elem = dumpedData.back();
+            dumpedData.pop_back();
+            return elem;
+        }
+        throw std::out_of_range("No elements to pop");
+    }
+
+    char popUpper() {
+        char elem = pop();
+        return std::toupper(elem);
+    }
+
+    char popLower() {
+        char elem = pop();
+        return std::tolower(elem);
+    }
+};
+
+int main() {
+    DataManager<int> intManager;
+    int intArray[] = {1, 2, 3, 4, 5};
+    intManager.push(intArray, 5);
+    std::cout << "Int elements: ";
+    std::copy(intManager.data, intManager.data + intManager.count, std::ostream_iterator<int>(std::cout, " "));
+    std::cout << std::endl;
+
+    DataManager<double> doubleManager;
+    double doubleArray[] = {1.1, 2.2, 3.3, 4.4, 5.5};
+    doubleManager.push(doubleArray, 5);
+    std::cout << "Double elements: ";
+    std::copy(doubleManager.data, doubleManager.data + doubleManager.count, std::ostream_iterator<double>(std::cout, " "));
+    std::cout << std::endl;
+
+    DataManager<char> charManager;
+    char charArray[] = {'a', 'b', 'c', '!', '@', '#'};
+    charManager.push(charArray, 6);
+    std::cout << "Char elements (with punctuation replaced): ";
+    std::copy(charManager.data, charManager.data + charManager.count, std::ostream_iterator<char>(std::cout, " "));
+    std::cout << std::endl;
+
+    // Демонстрация методов popUpper и popLower
+    std::cout << "Popped upper case: " << charManager.popUpper() << std::endl;
+    std::cout << "Popped lower case: " << charManager.popLower() << std::endl;
+
+    return 0;
+}
