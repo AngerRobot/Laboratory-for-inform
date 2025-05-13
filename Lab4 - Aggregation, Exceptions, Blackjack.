@@ -1,0 +1,175 @@
+#include <iostream>
+#include <vector>
+#include <ctime>
+#include <cstdlib>
+#include <algorithm> // Для std::shuffle
+#include <random>    // Для std::default_random_engine
+#include <chrono>    // Для std::chrono::system_clock
+
+class Card {
+public:
+    enum Suit { HEARTS, DIAMONDS, CLUBS, SPADES };
+    enum Rank { TWO = 2, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, JACK, QUEEN, KING, ACE };
+
+    Card(Rank r, Suit s) : rank(r), suit(s) {}
+
+    int getValue() const {
+        if (rank >= JACK && rank <= KING) return 10;
+        if (rank == ACE) return 11; // Будем считать, что туз равен 11, позже можно будет изменить на 1
+        return rank;
+    }
+
+    void display() const {
+        const char* ranks[] = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
+        const char* suits[] = { "♥", "♦", "♣", "♠" };
+        std::cout << ranks[rank - 2] << suits[suit] << " ";
+    }
+
+private:
+    Rank rank;
+    Suit suit;
+};
+
+class Deck {
+public:
+    Deck() {
+        for (int s = Card::HEARTS; s <= Card::SPADES; ++s) {
+            for (int r = Card::TWO; r <= Card::ACE; ++r) {
+                cards.push_back(Card(static_cast<Card::Rank>(r), static_cast<Card::Suit>(s)));
+            }
+        }
+        shuffle();
+    }
+
+    void shuffle() {
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::shuffle(cards.begin(), cards.end(), std::default_random_engine(seed));
+    }
+
+    Card draw() {
+        Card card = cards.back();
+        cards.pop_back();
+        return card;
+    }
+
+private:
+    std::vector<Card> cards;
+};
+
+class Player {
+public:
+    void addCard(const Card& card) {
+        hand.push_back(card);
+    }
+
+    int getHandValue() const {
+        int value = 0;
+        int aces = 0;
+        for (const Card& card : hand) {
+            value += card.getValue();
+            if (card.getValue() == 11) aces++;
+        }
+        while (value > 21 && aces > 0) {
+            value -= 10; // Превращаем туз из 11 в 1
+            aces--;
+        }
+        return value;
+    }
+
+    void displayHand(bool revealDealer = false) const {
+        if (revealDealer) {
+            for (const Card& card : hand) {
+                card.display();
+            }
+        } else {
+            std::cout << "?? ";
+            for (size_t i = 1; i < hand.size(); ++i) {
+                hand[i].display();
+            }
+        }
+        std::cout << std::endl;
+    }
+
+private:
+    std::vector<Card> hand;
+};
+
+class BlackjackGame {
+public:
+    void play() {
+        Deck deck;
+        Player dealer;
+        Player player;
+
+        // Раздаем карты
+        player.addCard(deck.draw());
+        player.addCard(deck.draw());
+        dealer.addCard(deck.draw());
+        dealer.addCard(deck.draw());
+
+        // Игровой процесс
+        std::cout << "Ваша ставка? ";
+        double bet;
+        std::cin >> bet;
+
+        while (true) {
+            std::cout << "Колоды:\nДилер: ";
+            dealer.displayHand();
+            std::cout << "Вы: ";
+            player.displayHand();
+
+            if (player.getHandValue() == 21) {
+                std::cout << "Поздравляем! У вас блэкджек!" << std::endl;
+                return;
+            }
+
+            std::cout << "1. Хватит\n2. Еще\n";
+            int choice;
+            std::cin >> choice;
+
+            if (choice == 1) {
+                break; // Игрок закончил брать карты
+            } else {
+                player.addCard(deck.draw());
+                if (player.getHandValue() > 21) {
+                    std::cout << "Вы проиграли! Перебор." << std::endl;
+                    return;
+                }
+            }
+        }
+
+        // Дилер играет
+        while (dealer.getHandValue() < 17) {
+            dealer.addCard(deck.draw());
+        }
+
+        // Показываем руки
+        std::cout << "Колоды:\nДилер: ";
+        dealer.displayHand(true); // Показываем карты дилера
+        std::cout << "Вы: ";
+        player.displayHand(true); // Показываем карты игрока
+
+        // Определяем результат
+        int playerValue = player.getHandValue();
+        int dealerValue = dealer.getHandValue();
+
+        std::cout << "Ваше значение: " << playerValue << std::endl;
+        std::cout << "Значение дилера: " << dealerValue << std::endl;
+
+        if (dealerValue > 21) {
+            std::cout << "Дилер перебрал! Вы выиграли!" << std::endl;
+        } else if (playerValue > dealerValue) {
+            std::cout << "Поздравляем! Вы выиграли!" << std::endl;
+        } else if (playerValue < dealerValue) {
+            std::cout << "Вы проиграли!" << std::endl;
+        } else {
+            std::cout << "Ничья!" << std::endl;
+        }
+    }
+};
+
+int main() {
+    BlackjackGame game;
+    game.play();
+    return 0;
+}
