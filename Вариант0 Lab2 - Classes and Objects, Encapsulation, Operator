@@ -1,0 +1,83 @@
+#include <iostream>
+#include <string>
+
+class Robot {
+private:
+    std::string name;
+    int x, y; // Текущие координаты
+    int batteryLevel; // Уровень заряда батареи
+    int speed; // Скорость передвижения
+
+public:
+    // Конструктор с параметрами
+    Robot(std::string name, int x = 0, int y = 0) 
+        : name(name), x(x), y(y), batteryLevel(100), speed(1) {}
+
+    // Сеттер для координат
+    void setCoordinates(int newX, int newY) {
+        x = newX;
+    }
+
+    // Метод для перемещения робота
+    void moveRight() {
+        x += speed;
+        batteryLevel -= (3 + speed); // Уменьшаем уровень заряда
+    }
+
+    // Метод для увеличения скорости
+    void accelerate() {
+        speed += 1;
+    }
+
+    // Метод для вывода информации о роботе
+    void displayStatus() const {
+        std::cout << "Robot: " << name 
+                  << ", Coordinates: (" << x << ", " << y << ")"
+                  << ", Battery Level: " << batteryLevel 
+                  << "%, Speed: " << speed << std::endl;
+    }
+};
+
+int main() {
+    // Создаем трех роботов
+    Robot robot1("Robot1", 0, 0);
+    Robot robot2("Robot2");
+    robot2.setCoordinates(0, 0);
+    Robot robot3("Robot3");
+
+    // Выводим начальные данные
+    std::cout << "Initial Status:" << std::endl;
+    robot1.displayStatus();
+    robot2.displayStatus();
+    robot3.displayStatus();
+
+    // Перемещение роботов
+    for (int step = 1; step <= 5; ++step) {
+        std::cout << "\nStep " << step << ":" << std::endl;
+
+        // Ускоряем и перемещаем роботов в соответствии с условиями
+        if (step <= 3) {
+            robot1.accelerate();
+        }
+        if (step == 2) {
+            robot2.accelerate();
+        }
+        if (step == 4) {
+            robot2.accelerate();
+        }
+        if (step == 5) {
+            robot3.accelerate();
+        }
+
+        robot1.moveRight();
+        robot2.moveRight();
+        robot3.moveRight();
+
+        // Выводим статус после перемещения
+        robot1.displayStatus();
+        robot2.displayStatus();
+        robot3.displayStatus();
+    }
+
+    return 0;
+}
