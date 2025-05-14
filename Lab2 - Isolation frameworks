@@ -1,0 +1,302 @@
+1) Задание
+
+Класс FileService
+
+using System;
+using System.IO;
+
+public class FileService
+{
+    public int MergeTemporaryFiles(string dir)
+    {
+        if (!Directory.Exists(dir))
+        {
+            throw new DirectoryNotFoundException($"Directory not found: {dir}");
+        }
+
+        string[] tempFiles = Directory.GetFiles(dir, "*.tmp");
+        if (tempFiles.Length == 0)
+        {
+            return 0; 
+        }
+
+        string backupFilePath = Path.Combine(dir, "backup.tmp");
+
+        using (var backupFileStream = new FileStream(backupFilePath, FileMode.Create))
+        {
+            foreach (var tempFile in tempFiles)
+            {
+                using (var tempFileStream = new FileStream(tempFile, FileMode.Open))
+                {
+                    tempFileStream.CopyTo(backupFileStream);
+                }
+                File.Delete(tempFile); 
+            }
+        }
+
+        return tempFiles.Length; 
+    }
+}
+
+Класс ReportViewer
+
+
+using System;
+using System.IO;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        string testDir = "testDir";
+
+        Directory.CreateDirectory(testDir);
+
+        ReportViewer reportViewer1 = new ReportViewer();
+        reportViewer1.PrepareData(testDir); 
+
+        File.WriteAllText(Path.Combine(testDir, "file1.tmp"), "Hello, World!");
+        ReportViewer reportViewer2 = new ReportViewer();
+        reportViewer2.PrepareData(testDir); 
+
+        try
+        {
+            ReportViewer reportViewer3 = new ReportViewer();
+            reportViewer3.PrepareData("nonexistentDir"); 
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        File.WriteAllText(Path.Combine(testDir, "file2.tmp"), "Another file.");
+        File.WriteAllText(Path.Combine(testDir, "file3.tmp"), "Yet another file.");
+        ReportViewer reportViewer4 = new ReportViewer();
+        reportViewer4.PrepareData(testDir); 
+
+Directory.Delete(testDir, true);
+    }
+}
+
+2)Задание
+
+using System;
+using System.Data;
+using Microsoft.Data.SqlClient; 
+using Dapper; 
+
+public class SqlQueryPreparator
+{
+    public string[] PrepareQueries(string[] queries)
+    {
+        if (queries == null || queries.Length == 0)
+        {
+            return new string[0]; 
+        }
+
+        string[] preparedQueries = new string[queries.Length];
+
+        for (int i = 0; i < queries.Length; i++)
+        {
+            preparedQueries[i] = StringFormatter.SafeString(queries[i]);
+        }
+
+        return preparedQueries;
+    }
+}
+
+public static class StringFormatter
+{
+    public static string SafeString(string s)
+    {
+    
+        if (s == null)
+        {
+            return null;
+        }
+
+        return s.Replace("'", "''"); 
+    }
+}
+
+public class DatabaseService
+{
+    private readonly string _connectionString;
+
+    public DatabaseService(string connectionString)
+    {
+        _connectionString = connectionString;
+    }
+
+    public void ExecuteQueries(string[] queries)
+    {
+        var preparator = new SqlQueryPreparator();
+        var safeQueries = preparator.PrepareQueries(queries);
+
+        using (IDbConnection dbConnection = new SqlConnection(_connectionString))
+        {
+            dbConnection.Open();
+            foreach (var query in safeQueries)
+            {
+                dbConnection.Execute(query);
+            }
+        }
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        string connectionString = "YourConnectionStringHere"; 
+        var databaseService = new DatabaseService(connectionString);
+
+        string[] queries = new string[]
+        {
+            "INSERT INTO Users (Name) VALUES ('John Doe')",
+            "INSERT INTO Users (Name) VALUES ('Jane O''Connor')"
+        };
+
+        databaseService.ExecuteQueries(queries);
+    }
+}
+
+3)Задание
+using System;
+using System.IO;
+using System.Linq;
+
+public class ArrayProcessor
+{
+    public double[] SortAndFilter(double[] input)
+    {
+        return input.Where(x => x >= 0).OrderBy(x => x).ToArray();
+    }
+}
+
+public class Signal
+{
+    public double[] Samples { get; set; }
+
+    public void FullRectify()
+    {
+        if (Samples == null || Samples.Length == 0)
+        {
+            throw new InvalidOperationException("Samples array is null or empty.");
+        }
+
+        var processor = new ArrayProcessor();
+        Samples = processor.SortAndFilter(Samples);
+
+        double sum = Samples.Sum();
+        double difference = Samples.Length > 1 ? Samples[0] - Samples[1] : Samples[0];
+        double average = Samples.Length > 0 ? sum / Samples.Length : 0;
+
+        WriteResultsToFile(sum, difference, average);
+    }
+
+    private void WriteResultsToFile(double sum, double difference, double average)
+    {
+        string fileName = "results.log";
+        int fileIndex = 1;
+
+        while (File.Exists(fileName))
+        {
+            fileName = $"results({fileIndex}).log";
+            fileIndex++;
+        }
+
+        using (StreamWriter writer = new StreamWriter(fileName))
+        {
+            writer.WriteLine($"Sum: {sum}");
+            writer.WriteLine($"Difference: {difference}");
+            writer.WriteLine($"Average: {average}");
+        }
+    }
+}
+
+
+Тестовый план
+
+using NUnit.Framework;
+using System.IO;
+
+[TestFixture]
+public class SignalTests
+{
+    [Test]
+    public void FullRectify_ShouldProcessSamplesCorrectly()
+    {
+        // Arrange
+        var signal = new Signal
+        {
+            Samples = new double[] { 3.0, -1.0, 2.0, 5.0, -2.0 }
+        };
+
+        // Act
+        signal.FullRectify();
+
+        // Assert
+        Assert.AreEqual(new double[] { 2.0, 3.0, 5.0 }, signal.Samples);
+
+        string expectedFileName = "results.log";
+        if (File.Exists(expectedFileName))
+        {
+            expectedFileName = "results(1).log";
+        }
+
+        Assert.IsTrue(File.Exists(expectedFileName));
+
+        var lines = File.ReadAllLines(expectedFileName);
+        Assert.AreEqual(3, lines.Length);
+        Assert.AreEqual($"Sum: {10.0}", lines[0]);
+        Assert.AreEqual($"Difference: {-1.0}", lines[1]);
+        Assert.AreEqual($"Average: {3.3333333333333335}", lines[2]);
+
+        File.Delete(expectedFileName);
+    }
+}
+
+4)Задание
+using NUnit.Framework;
+
+[TestFixture]
+public class LinksRepositoryTests
+{
+    [Test]
+    public void Add_ValidLink_ShouldAddToRepository()
+    {
+        // Arrange
+        var repository = new LinksRepository();
+        string link = "https://example.com/test link";
+
+        // Act
+        repository.Add(link);
+
+        // Assert
+        var links = repository.GetLinks();
+        Assert.AreEqual(1, links.Count);
+        Assert.AreEqual("https://example.com/test%20link", links[0]); // Проверка экранирования пробела
+    }
+
+    [Test]
+    public void Add_EmptyLink_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var repository = new LinksRepository();
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => repository.Add(""));
+    }
+
+    [Test]
+    public void Add_NullLink_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var repository = new LinksRepository();
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => repository.Add(null));
+    }
+}
+
