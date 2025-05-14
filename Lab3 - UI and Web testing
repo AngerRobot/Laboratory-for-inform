@@ -1,0 +1,183 @@
+using System;
+using System.IO;
+using System.Windows.Forms;
+
+namespace PathValidatorApp
+{
+    public partial class MainForm : Form
+    {
+        public MainForm()
+        {
+            InitializeComponent();
+        }
+
+        private void btnAdd_Click(object sender, EventArgs e)
+        {
+            string path = txtPath.Text.Trim();
+
+            if (string.IsNullOrEmpty(path))
+            {
+                MessageBox.Show("Пустая строка!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (IsValidPath(path))
+            {
+                listBoxValid.Items.Add(path);
+            }
+            else
+            {
+                listBoxInvalid.Items.Add(path);
+            }
+
+            txtPath.Clear();
+        }
+
+        private void btnRemoveValid_Click(object sender, EventArgs e)
+        {
+            if (listBoxValid.SelectedItem != null)
+            {
+                listBoxValid.Items.Remove(listBoxValid.SelectedItem);
+            }
+        }
+
+        private void btnRemoveInvalid_Click(object sender, EventArgs e)
+        {
+            if (listBoxInvalid.SelectedItem != null)
+            {
+                listBoxInvalid.Items.Remove(listBoxInvalid.SelectedItem);
+            }
+        }
+
+        private void btnMoveToInvalid_Click(object sender, EventArgs e)
+        {
+            if (listBoxValid.SelectedItem != null)
+            {
+                listBoxInvalid.Items.Add(listBoxValid.SelectedItem);
+                listBoxValid.Items.Remove(listBoxValid.SelectedItem);
+            }
+        }
+
+        private void btnReturn_Click(object sender, EventArgs e)
+        {
+            if (listBoxInvalid.SelectedItem != null)
+            {
+                txtPath.Text = listBoxInvalid.SelectedItem.ToString();
+                listBoxInvalid.Items.Remove(listBoxInvalid.SelectedItem);
+            }
+            else
+            {
+                MessageBox.Show("Вы не выбрали строку для повторной проверки!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private bool IsValidPath(string path)
+        {
+            // Проверка на валидность пути
+            try
+            {
+                return Path.IsPathRooted(path) && !string.IsNullOrWhiteSpace(Path.GetFileName(path));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+}
+
+
+2)Задание
+
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using System;
+using System.Threading;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        using (IWebDriver driver = new ChromeDriver())
+        {
+            driver.Navigate().GoToUrl("https://www.google.com");
+
+            var searchBox = driver.FindElement(By.Name("q"));
+            searchBox.SendKeys("unit testing");
+            searchBox.Submit();
+
+            Thread.Sleep(2000); // Лучше использовать WebDriverWait
+
+            var wikiLink = driver.FindElement(By.XPath("//a[contains(@href, 'wikipedia.org') and contains(text(), 'Wikipedia')]"));
+            wikiLink.Click();
+
+            Thread.Sleep(2000);
+
+            var wikiSearchBox = driver.FindElement(By.Name("search"));
+            wikiSearchBox.SendKeys("NUnit");
+            wikiSearchBox.Submit();
+
+            Thread.Sleep(2000);
+
+            if (driver.Url == "https://en.wikipedia.org/wiki/NUnit")
+            {
+                Console.WriteLine("URL страницы соответствует ожидаемому.");
+            }
+            else
+            {
+                Console.WriteLine("URL страницы не соответствует ожидаемому.");
+            }
+
+            var languagesList = driver.FindElement(By.Id("p-lang"));
+            if (languagesList.Text.Contains("Русский"))
+            {
+                Console.WriteLine("Русский язык присутствует в списке языков.");
+            }
+            else
+            {
+                Console.WriteLine("Русский язык отсутствует в списке языков.");
+            }
+
+            driver.Quit();
+        }
+    }
+}
+
+
+3)Задание
+
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using System;
+using System.Threading;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        using (IWebDriver driver = new ChromeDriver())
+        {
+            driver.Navigate().GoToUrl("http://localhost:5000"); 
+
+            var inputField = driver.FindElement(By.Id("inputFieldId")); // Замените на ID вашего поля ввода
+            inputField.SendKeys("невалидные данные"); // Ввод невалидных данных
+
+            var addButton = driver.FindElement(By.Id("addButtonId")); // Замените на ID вашей кнопки
+            addButton.Click();
+
+            Thread.Sleep(2000); // Лучше использовать WebDriverWait
+
+            var errorMessage = driver.FindElement(By.Id("errorMessageId")); // Замените на ID вашего сообщения об ошибке
+            if (errorMessage.Displayed)
+            {
+                Console.WriteLine("Сообщение об ошибке отображается корректно.");
+            }
+            else
+            {
+                Console.WriteLine("Сообщение об ошибке не отображается.");
+            }
+
+            driver.Quit();
+        }
+    }
+}
